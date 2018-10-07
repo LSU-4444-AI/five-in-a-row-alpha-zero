@@ -180,6 +180,7 @@ class TrainPipeline:
                                 self.pure_mcts_playout_num < 5000):
                             self.pure_mcts_playout_num += 1000
                             self.best_win_ratio = 0.0
+            self.policy_value_net.save_model_history('./model_history')
         except KeyboardInterrupt:
             print('\n\rquit')
 

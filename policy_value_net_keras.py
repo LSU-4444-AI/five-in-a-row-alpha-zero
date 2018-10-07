@@ -25,6 +25,7 @@ class PolicyValueNet():
         self.l2_const = 1e-4  # coef of l2 penalty 
         self.create_policy_value_net()
         self._loss_train_op()
+        self.model_details = None
 
         if model_file:
             net_params = pickle.load(open(model_file, 'rb'))
@@ -52,7 +53,7 @@ class PolicyValueNet():
         self.policy_net = Dense(self.board_width * self.board_height,
                                 activation="softmax",
                                 kernel_regularizer=l2(self.l2_const))(
-            policy_net)
+                policy_net)
         # state value layers
         value_net = Conv2D(filters=2, kernel_size=(1, 1),
                            data_format="channels_first", activation="relu",
@@ -80,7 +81,8 @@ class PolicyValueNet():
         legal_positions = board.availables
         current_state = board.current_state()
         act_probs, value = self.policy_value(
-            current_state.reshape(-1, 4, self.board_width, self.board_height))
+                current_state.reshape(-1, 4, self.board_width,
+                                      self.board_height))
         act_probs = zip(legal_positions, act_probs.flatten()[legal_positions])
         return act_probs, value[0][0]
 
@@ -108,8 +110,11 @@ class PolicyValueNet():
             action_probs, _ = self.model.predict_on_batch(state_input_union)
             entropy = self_entropy(action_probs)
             K.set_value(self.model.optimizer.lr, learning_rate)
-            self.model.fit(state_input_union, [mcts_probs_union, winner_union],
-                           batch_size=len(state_input), verbose=0)
+            self.model_details = self.model.fit(state_input_union,
+                                                [mcts_probs_union,
+                                                 winner_union],
+                                                batch_size=len(state_input),
+                                                verbose=0)
             return loss[0], entropy
 
         self.train_step = train_step
@@ -122,3 +127,7 @@ class PolicyValueNet():
         """ save model params to file """
         net_params = self.get_policy_param()
         pickle.dump(net_params, open(model_file, 'wb'), protocol=2)
+
+    def save_model_history(self, model_history):
+        with open(model_history, 'w+b') as file_pi:
+            pickle.dump(self.model_details.history, file_pi)
