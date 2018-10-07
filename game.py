@@ -5,35 +5,37 @@ import numpy as np
 class Board(object):
     """board for the game"""
 
-    def __init__(self, width=8, height=8, n_in_row=5, start_player=0):
-        self.width = width
-        self.height = height
+    def __init__(self, **kwargs):
+        self.width = int(kwargs.get('width', 8))
+        self.height = int(kwargs.get('height', 8))
+        # board states stored as a dict,
+        # key: move as location on the board,
+        # value: player as pieces type
+        self.states = {}
         # need how many pieces in a row to win
-        self.n_in_row = n_in_row
+        self.n_in_row = int(kwargs.get('n_in_row', 5))
+        self.players = [1, 2]  # player1 and player2
+
+    def init_board(self, start_player=0):
         if self.width < self.n_in_row or self.height < self.n_in_row:
             raise Exception('board width and height can not be '
                             'less than {}'.format(self.n_in_row))
-        self.states = {}
-        # Two players
-        self.players = [1, 2]  # player1 and player2
         self.current_player = self.players[start_player]  # start player
         # keep available moves in a list
-        self.available_location = list(range(self.width * self.height))
+        self.availables = list(range(self.width * self.height))
+        self.states = {}
         self.last_move = -1
 
     def move_to_location(self, move):
         """
-        6*6 board's moves like:
-        30 31 32 33 34 35
-        24 25 26 27 28 29
-        18 19 20 21 22 23
-        12 13 14 15 16 17
-         6  7  8  9 10 11
-         0  1  2  3  4  5
-        and move 10 will make location (4,1)
+        3*3 board's moves like:
+        6 7 8
+        3 4 5
+        0 1 2
+        and move 5's location is (1,2)
         """
-        w = move % self.width
         h = move // self.width
+        w = move % self.width
         return [h, w]
 
     def location_to_move(self, location):
@@ -69,7 +71,7 @@ class Board(object):
 
     def do_move(self, move):
         self.states[move] = self.current_player
-        self.available_location.remove(move)
+        self.availables.remove(move)
         self.current_player = (
             self.players[0] if self.current_player == self.players[1]
             else self.players[1]
@@ -82,7 +84,7 @@ class Board(object):
         states = self.states
         n = self.n_in_row
 
-        moved = list(set(range(width * height)) - set(self.available_location))
+        moved = list(set(range(width * height)) - set(self.availables))
         if len(moved) < self.n_in_row + 2:
             return False, -1
 
@@ -114,7 +116,7 @@ class Board(object):
         win, winner = self.has_a_winner()
         if win:
             return True, winner
-        elif not len(self.available_location):
+        elif not len(self.availables):
             return True, -1
         return False, -1
 
@@ -125,7 +127,7 @@ class Board(object):
 class Game(object):
     """game server"""
 
-    def __init__(self, board):
+    def __init__(self, board, **kwargs):
         self.board = board
 
     def graphic(self, board, player1, player2):
@@ -201,8 +203,7 @@ class Game(object):
                 self.graphic(self.board, p1, p2)
             end, winner = self.board.game_end()
             if end:
-                # winner from the perspective of the current player of each
-                # state
+                # winner from the perspective of the current player of each state
                 winners_z = np.zeros(len(current_players))
                 if winner != -1:
                     winners_z[np.array(current_players) == winner] = 1.0
