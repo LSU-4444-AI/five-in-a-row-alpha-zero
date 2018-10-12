@@ -1,19 +1,21 @@
 from __future__ import print_function
 
+import pickle
+
+import keras.backend as K
+import numpy as np
+from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.engine.topology import Input
 from keras.engine.training import Model
 from keras.layers.convolutional import Conv2D
-from keras.layers.core import Activation, Dense, Flatten
-from keras.layers.merge import Add
-from keras.layers.normalization import BatchNormalization
-from keras.regularizers import l2
+from keras.layers.core import Dense, Flatten
 from keras.optimizers import Adam
-import keras.backend as K
+from keras.regularizers import l2
 
-from keras.utils import np_utils
-
-import numpy as np
-import pickle
+save_dir = './saved'
+current_policy_path = save_dir + '/current_policy.model'
+best_policy_path = save_dir + '/best_policy.model'
+his_path = save_dir + '/model_history'
 
 
 class PolicyValueNet():
@@ -110,11 +112,26 @@ class PolicyValueNet():
             action_probs, _ = self.model.predict_on_batch(state_input_union)
             entropy = self_entropy(action_probs)
             K.set_value(self.model.optimizer.lr, learning_rate)
+            checkpoint = ModelCheckpoint(current_policy_path,  # model filename
+                                         monitor='val_loss',
+                                         # quantity to monitor
+                                         verbose=0,  # verbosity - 0 or 1
+                                         save_best_only=True,
+                                         # The latest best model will not be
+                                         #  overwritten
+                                         # The decision to overwrite model
+                                         mode='auto')
+            early_stopping = EarlyStopping(monitor="val_loss", patience=50,
+                                           verbose=0,
+                                           mode='auto')
             self.model_details = self.model.fit(state_input_union,
                                                 [mcts_probs_union,
                                                  winner_union],
+                                                validation_split=0.2,
                                                 batch_size=len(state_input),
-                                                verbose=0)
+                                                callbacks=[checkpoint,
+                                                           early_stopping],
+                                                verbose=2)
             return loss[0], entropy
 
         self.train_step = train_step

@@ -5,7 +5,8 @@ from collections import defaultdict, deque
 from game import Board, Game
 from mcts_pure import MCTSPlayer as MCTS_Pure
 from mcts_alphaZero import MCTSPlayer
-from policy_value_net_keras import PolicyValueNet # Keras
+# Keras
+from policy_value_net_keras import PolicyValueNet, current_policy_path, best_policy_path, his_path
 
 
 class TrainPipeline:
@@ -170,17 +171,17 @@ class TrainPipeline:
                 if (i+1) % self.check_freq == 0:
                     print("current self-play batch: {}".format(i+1))
                     win_ratio = self.policy_evaluate()
-                    self.policy_value_net.save_model('./current_policy.model')
+                    self.policy_value_net.save_model(current_policy_path)
                     if win_ratio > self.best_win_ratio:
                         print("New best policy!!!!!!!!")
                         self.best_win_ratio = win_ratio
                         # update the best_policy
-                        self.policy_value_net.save_model('./best_policy.model')
+                        self.policy_value_net.save_model(best_policy_path)
                         if (self.best_win_ratio == 1.0 and
                                 self.pure_mcts_playout_num < 5000):
                             self.pure_mcts_playout_num += 1000
                             self.best_win_ratio = 0.0
-            self.policy_value_net.save_model_history('./model_history')
+            self.policy_value_net.save_model_history(his_path)
         except KeyboardInterrupt:
             print('\n\rquit')
 
