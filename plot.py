@@ -3,9 +3,8 @@ import numpy as np
 import os
 import pickle
 from keras.callbacks import History
+from policy_value_net_keras import his_path
 from keras.utils import plot_model
-
-history_path = './model_history'
 
 # Model accuracy and loss plots
 def plot_model_history(model_details):
@@ -39,9 +38,9 @@ def plot_model_history(model_details):
 
 
 # Plot saved model history
-if os.path.exists(history_path):
+if os.path.exists(his_path):
     # Save model history
-    with open(history_path, 'rb') as file_pi:
+    with open(his_path, 'rb') as file_pi:
         model_history = History()
         model_history.history = pickle.load(file_pi)
         plot_model_history(model_history)
