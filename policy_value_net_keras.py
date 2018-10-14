@@ -4,7 +4,6 @@ import pickle
 
 import keras.backend as K
 import numpy as np
-from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.engine.topology import Input
 from keras.engine.training import Model
 from keras.layers.convolutional import Conv2D
@@ -27,7 +26,6 @@ class PolicyValueNet():
         self.l2_const = 1e-4  # coef of l2 penalty 
         self.create_policy_value_net()
         self._loss_train_op()
-        self.model_details = None
 
         if model_file:
             net_params = pickle.load(open(model_file, 'rb'))
@@ -112,26 +110,12 @@ class PolicyValueNet():
             action_probs, _ = self.model.predict_on_batch(state_input_union)
             entropy = self_entropy(action_probs)
             K.set_value(self.model.optimizer.lr, learning_rate)
-            checkpoint = ModelCheckpoint(current_policy_path,  # model filename
-                                         monitor='val_loss',
-                                         # quantity to monitor
-                                         verbose=0,  # verbosity - 0 or 1
-                                         save_best_only=True,
-                                         # The latest best model will not be
-                                         #  overwritten
-                                         # The decision to overwrite model
-                                         mode='auto')
-            early_stopping = EarlyStopping(monitor="val_loss", patience=50,
-                                           verbose=0,
-                                           mode='auto')
             self.model_details = self.model.fit(state_input_union,
                                                 [mcts_probs_union,
                                                  winner_union],
                                                 validation_split=0.2,
                                                 batch_size=len(state_input),
-                                                callbacks=[checkpoint,
-                                                           early_stopping],
-                                                verbose=2)
+                                                verbose=0)
             return loss[0], entropy
 
         self.train_step = train_step
@@ -145,6 +129,7 @@ class PolicyValueNet():
         net_params = self.get_policy_param()
         pickle.dump(net_params, open(model_file, 'wb'), protocol=2)
 
-    def save_model_history(self, model_history):
-        with open(model_history, 'w+b') as file_pi:
-            pickle.dump(self.model_details.history, file_pi)
+
+def save_model_history(history_path, history):
+    with open(history_path, 'w+b') as file_pi:
+        pickle.dump(history, file_pi)
