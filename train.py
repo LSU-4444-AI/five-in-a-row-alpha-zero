@@ -175,6 +175,8 @@ class TrainPipeline:
                     print("current self-play batch: {}".format(i + 1))
                     win_ratio = self.policy_evaluate()
                     self.policy_value_net.save_model(current_policy_path)
+                    history = {'loss': losses}
+                    save_model_history(his_path, history)
                     if win_ratio > self.best_win_ratio:
                         print("New best policy!!!!!!!!")
                         self.best_win_ratio = win_ratio
@@ -184,12 +186,11 @@ class TrainPipeline:
                                 self.pure_mcts_playout_num < 5000):
                             self.pure_mcts_playout_num += 1000
                             self.best_win_ratio = 0.0
-            history = {'loss': losses}
-            save_model_history(his_path, history)
         except KeyboardInterrupt:
             print('\n\rquit')
 
 
 if __name__ == '__main__':
-    training_pipeline = TrainPipeline()
-    training_pipeline.run()
+    training_pipeline = TrainPipeline(init_model='saved/best_policy.model')
+    # training_pipeline.run()
+    training_pipeline.policy_value_net.get_model().summary()
